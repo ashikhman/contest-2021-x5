@@ -1,0 +1,35 @@
+plugins {
+    id 'org.springframework.boot' version '2.5.4'
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+    id 'java'
+}
+
+group = 'com.ashikhman'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '11'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'com.google.code.gson:gson:2.8.8'
+    implementation 'com.google.code.findbugs:jsr305:3.0.2'
+    implementation group: 'io.swagger.core.v3', name: 'swagger-annotations', version: '2.1.10'
+    implementation group: 'com.squareup.okhttp', name: 'okhttp', version: '2.7.5'
+    implementation group: 'com.squareup.okhttp', name: 'logging-interceptor', version: '2.7.5'
+    implementation group: 'org.threeten', name: 'threetenbp', version: '1.5.1'
+    implementation group: 'io.gsonfire', name: 'gson-fire', version: '1.8.5'
+
+    compileOnly 'org.projectlombok:lombok'
+
+    annotationProcessor 'org.projectlombok:lombok'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+test {
+    useJUnitPlatform()
+}
