@@ -26,7 +26,7 @@ public class GameStateHolder {
         if (!stateLoaded) {
             synchronized (this) {
                 if (!stateLoaded) {
-                    state = load();
+                    state = loadState();
                 }
             }
         }
@@ -35,7 +35,9 @@ public class GameStateHolder {
     }
 
     public GameStateModel update(CurrentWorldResponse worldResponse) {
-        state.setTickCount(worldResponse.getTickCount())
+        state
+                .setWorldResponse(worldResponse)
+                .setTickCount(worldResponse.getTickCount())
                 .setCurrentTick(worldResponse.getCurrentTick())
                 .setIncome(worldResponse.getIncome())
                 .setSalaryCosts(worldResponse.getSalaryCosts())
@@ -63,25 +65,30 @@ public class GameStateHolder {
                 }
             }
 
-            var cellModel = state.getRackCells()
-                    .putIfAbsent(
-                            cellResponse.getId(),
-                            new RackCellModel().setId(cellResponse.getId())
-                    )
+            var cellModel = state.getRackCells().get(cellResponse.getId());
+            if (null == cellModel) {
+                cellModel = new RackCellModel().setId(cellResponse.getId());
+                state.getRackCells().put(cellModel.getId(), cellModel);
+            }
+
+            var productQuantity = cellResponse.getProductQuantity();
+            if (null == productQuantity) {
+                productQuantity = 0;
+            }
+
+            cellModel
                     .setVisibility(cellResponse.getVisibility())
                     .setCapacity(cellResponse.getCapacity())
                     .setProduct(product)
                     .setProductName(cellResponse.getProductName())
-                    .setProductQuantity(cellResponse.getProductQuantity());
+                    .setProductQuantity(productQuantity);
 
             presentCells.add(cellModel.getId());
         });
 
-        state.getRackCells().forEach((id, rackCellModel) -> {
-            if (!presentCells.contains(id)) {
-                state.getRackCells().remove(id);
-            }
-        });
+        state.getRackCells()
+                .entrySet()
+                .removeIf(entry -> !presentCells.contains(entry.getKey()));
     }
 
     private void updateRecruitmentOffers(CurrentWorldResponse worldResponse) {
@@ -97,46 +104,50 @@ public class GameStateHolder {
 
     private void updateCheckoutLines(CurrentWorldResponse worldResponse) {
         var presentLines = new HashSet<Integer>();
-        worldResponse.getCheckoutLines().forEach(checkoutLineResponse -> {
-            var customer = state.getCustomers().get(checkoutLineResponse.getCustomerId());
-            if (null == customer) {
-                log.error("No customer found for id: {}", checkoutLineResponse.getCustomerId());
-                return;
+        worldResponse.getCheckoutLines().forEach(lineResponse -> {
+            var lineModel = state.getCheckoutLines().get(lineResponse.getId());
+            if (null == lineModel) {
+                lineModel = new CheckoutLineModel().setId(lineResponse.getId());
+                state.getCheckoutLines().put(lineModel.getId(), lineModel);
             }
 
-            var employee = state.getEmployees().get(checkoutLineResponse.getEmployeeId());
-            if (null == employee) {
-                log.error("No employee found for id: {}", checkoutLineResponse.getEmployeeId());
-                return;
+            CustomerModel customer = null;
+            if (null != lineResponse.getCustomerId()) {
+                customer = state.getCustomers().get(lineResponse.getCustomerId());
+                if (null == customer) {
+                    log.error("No customer found for id: {}", lineResponse.getCustomerId());
+                }
             }
+            lineModel.setCustomer(customer);
 
-            var checkoutLineModel = state.getCheckoutLines()
-                    .putIfAbsent(
-                            checkoutLineResponse.getId(),
-                            new CheckoutLineModel().setId(checkoutLineResponse.getId())
-                    )
-                    .setCustomer(customer)
-                    .setEmployee(employee);
+            EmployeeModel employee = null;
+            if (null != lineResponse.getEmployeeId()) {
+                employee = state.getEmployees().get(lineResponse.getEmployeeId());
+                if (null == employee) {
+                    log.error("No employee found for id: {}", lineResponse.getEmployeeId());
+                }
+            }
+            lineModel.setEmployee(employee);
 
-            presentLines.add(checkoutLineModel.getId());
+            presentLines.add(lineModel.getId());
         });
 
-        state.getCheckoutLines().forEach((id, checkoutLineModel) -> {
-            if (!presentLines.contains(id)) {
-                state.getCheckoutLines().remove(id);
-            }
-        });
+        state.getCheckoutLines()
+                .entrySet()
+                .removeIf(entry -> !presentLines.contains(entry.getKey()));
     }
 
     private void updateCustomer(CurrentWorldResponse worldResponse) {
-        var presentCustomer = new HashSet<Integer>();
+        var presentCustomers = new HashSet<Integer>();
         worldResponse.getCustomers().forEach(customerResponse -> {
-            var customerModel = state.getCustomers()
-                    .putIfAbsent(
-                            customerResponse.getId(),
-                            new CustomerModel().setId(customerResponse.getId())
-                    )
-                    .setMode(customerResponse.getMode());
+            var tempCustomerModel = state.getCustomers().get(customerResponse.getId());
+            if (null == tempCustomerModel) {
+                tempCustomerModel = new CustomerModel().setId(customerResponse.getId());
+                state.getCustomers().put(tempCustomerModel.getId(), tempCustomerModel);
+            }
+            var customerModel = tempCustomerModel;
+
+            customerModel.setMode(customerResponse.getMode());
 
             customerResponse.getBasket().forEach(productInBasketResponse -> {
                 var product = state.getProducts().get(productInBasketResponse.getId());
@@ -152,24 +163,24 @@ public class GameStateHolder {
                 customerModel.addProduct(productInBasketModel);
             });
 
-            presentCustomer.add(customerModel.getId());
+            presentCustomers.add(customerModel.getId());
         });
 
-        state.getCustomers().forEach((id, customerModel) -> {
-            if (!presentCustomer.contains(id)) {
-                state.getCustomers().remove(id);
-            }
-        });
+        state.getCustomers()
+                .entrySet()
+                .removeIf(entry -> !presentCustomers.contains(entry.getKey()));
     }
 
     private void updateEmployees(CurrentWorldResponse worldResponse) {
         var presentEmployees = new HashSet<Integer>();
         worldResponse.getEmployees().forEach(employeeResponse -> {
-            var employeeModel = state.getEmployees()
-                    .putIfAbsent(
-                            employeeResponse.getId(),
-                            new EmployeeModel().setId(employeeResponse.getId())
-                    )
+            var employeeModel = state.getEmployees().get(employeeResponse.getId());
+            if (null == employeeModel) {
+                employeeModel = new EmployeeModel().setId(employeeResponse.getId());
+                state.getEmployees().put(employeeModel.getId(), employeeModel);
+            }
+
+            employeeModel
                     .setFirstName(employeeResponse.getFirstName())
                     .setLastName(employeeResponse.getLastName())
                     .setExperience(employeeResponse.getExperience())
@@ -178,69 +189,62 @@ public class GameStateHolder {
             presentEmployees.add(employeeModel.getId());
         });
 
-        state.getEmployees().forEach((id, employeeModel) -> {
-            if (!presentEmployees.contains(id)) {
-                state.getEmployees().remove(id);
-            }
-        });
+        state.getEmployees()
+                .entrySet()
+                .removeIf(entry -> !presentEmployees.contains(entry.getKey()));
     }
 
     private void updateProducts(CurrentWorldResponse worldResponse) {
         var presentProducts = new HashSet<Integer>();
         worldResponse.getStock().forEach(productResponse -> {
-            var productModel = state.getProducts()
-                    .putIfAbsent(
-                            productResponse.getId(),
-                            new ProductModel().setId(productResponse.getId())
-                    )
+            var productModel = state.getProducts().get(productResponse.getId());
+            if (null == productModel) {
+                productModel = new ProductModel().setId(productResponse.getId());
+                state.getProducts().put(productModel.getId(), productModel);
+            }
+
+            productModel
                     .setName(productResponse.getName())
                     .setStockPrice(productResponse.getStockPrice())
-                    .setQuantity(productResponse.getInStock())
-                    .setSellPrice(productResponse.getSellPrice());
+                    .setQuantity(productResponse.getInStock());
 
             presentProducts.add(productModel.getId());
         });
 
-        state.getProducts().forEach((id, productModel) -> {
-            if (!presentProducts.contains(id)) {
-                state.getProducts().remove(id);
-            }
-        });
+        state.getProducts()
+                .entrySet()
+                .removeIf(entry -> !presentProducts.contains(entry.getKey()));
     }
 
-    private GameStateModel load() {
-        awaitServer();
-
-        CurrentWorldResponse worldResponse;
-        try {
-            worldResponse = api.loadWorld();
-        } catch (ApiException e) {
-            throw new UnexpectedException("Failed to load game world state", e);
-        }
-
-        update(worldResponse);
+    private GameStateModel loadState() {
+        update(loadWord());
         stateLoaded = true;
 
         return state;
     }
 
-    private void awaitServer() {
-        var awaitTimes = 120;
+    public CurrentWorldResponse loadWord() {
+        var awaitTimes = 60;
         var count = 0;
         var serverReady = false;
         do {
             try {
                 count += 1;
-                api.loadWorld();
-                serverReady = true;
 
+                var worldData = api.loadWorld();
+                log.info("World data loaded");
+
+                return worldData;
             } catch (ApiException e) {
+                //log.info("Failed to load world data", e);
                 try {
                     Thread.currentThread().sleep(1000L);
                 } catch (InterruptedException interruptedException) {
-                    throw new UnexpectedException("Failed to sleep for waiting for the server to get ready", interruptedException);
+                    //interruptedException.printStackTrace();
                 }
             }
         } while (!serverReady && count < awaitTimes);
+
+        throw new UnexpectedException(String.format("Game server did not responded in %s seconds", awaitTimes));
     }
 }

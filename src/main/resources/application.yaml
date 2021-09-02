@@ -1,2 +1,6 @@
 app:
   api-url: ${rs.endpoint:}
+
+logging:
+  level:
+    root: ERROR
