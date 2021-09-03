@@ -43,6 +43,8 @@ public class CommandsExecutor {
         request.setHireEmployeeCommands(new ArrayList<>());
         request.setFireEmployeeCommands(new ArrayList<>());
         request.setBuyStockCommands(new ArrayList<>());
+        request.setPutOnRackCellCommands(new ArrayList<>());
+        request.setPutOffRackCellCommands(new ArrayList<>());
 
         state.getCommands()
                 .forEach(command -> command.updateRequest(request));

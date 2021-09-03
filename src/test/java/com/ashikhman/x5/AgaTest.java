@@ -6,19 +6,7 @@ public class AgaTest {
 
     @Test
     void xxa() {
-        var aga = new Child();
-
-        System.out.println("XAXA: " + aga);
-    }
-
-    public static interface Parent {
-
-    }
-
-    public static class Child {
-        @Override
-        public String toString() {
-            return "XAXAX";
-        }
+        double price = 110;
+        System.out.println(price + price / 100.0 * 30.0);
     }
 }

@@ -24,6 +24,8 @@ public class BuyStockController implements ControllerInterface {
                     .setProduct(product)
                     .setQuantity(10000);
 
+            product.setQuantity(product.getQuantity() + command.getQuantity());
+
             commands.add(command);
         }
 
