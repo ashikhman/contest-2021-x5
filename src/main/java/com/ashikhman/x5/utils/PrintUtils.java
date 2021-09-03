@@ -33,7 +33,7 @@ public class PrintUtils {
         var joiner = new StringJoiner("|");
         for (var entry : state.getProducts().entrySet()) {
             var product = entry.getValue();
-            joiner.add(String.format("%s,%s,%s", product.getId(), product.getName(), product.getStockPrice()));
+            joiner.add(String.format("%s,%s,%s,%s", product.getId(), product.getName(), product.getStockPrice(), product.getQuantity()));
         }
 
         output.append(joiner);
@@ -57,19 +57,44 @@ public class PrintUtils {
         System.out.println(output);
     }
 
-    public static void printCustomers(GameStateModel state) {
+    public static void printCustomers(GameStateHolder stateHolder) {
         var output = new StringBuilder();
-        output.append("CUSTOMERS");
+        output.append("CUSTOMERS: ");
 
-//        var joiner = new StringJoiner("|");
-//        for (var entry : state.getCustomers().entrySet()) {
-//            var customer = entry.getValue();
-//            joiner.add(String.format(
-//                    "%s",
-//                    customer.getId(),
-//                    customer.get
-//            ));
-//        }
+        var stateJoiner = new StringJoiner("|");
+        for (var state : stateHolder.getHistory()) {
+
+            var count = 0;
+            var inHall = 0;
+            var waitCheckout = 0;
+            var atCheckout = 0;
+            for (var entry : state.getCustomers().entrySet()) {
+                var customer = entry.getValue();
+                count++;
+                switch (customer.getMode()) {
+                    case IN_HALL:
+                        inHall++;
+                        break;
+
+                    case AT_CHECKOUT:
+                        atCheckout++;
+                        break;
+
+                    case WAIT_CHECKOUT:
+                        waitCheckout++;
+                        break;
+                }
+            }
+
+            var itemJoinder = new StringJoiner(";");
+            itemJoinder.add(String.format("%s,%s,%s,%s", count, inHall, waitCheckout, atCheckout));
+            stateJoiner.add(String.format("[%s]%s", state.getCurrentTick(), itemJoinder));
+        }
+
+        output.append(stateJoiner);
+        output.append("@");
+
+        System.out.println(output);
     }
 
     public static void printCommands(GameStateHolder stateHolder) {

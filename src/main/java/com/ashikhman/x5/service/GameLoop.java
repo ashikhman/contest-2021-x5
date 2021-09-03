@@ -36,8 +36,10 @@ public class GameLoop {
         } while (!state.isGameOver());
 
         PrintUtils.printGameOver(state);
+        PrintUtils.printProducts(state);
 
         PrintUtils.printCommands(stateHolder);
+        PrintUtils.printCustomers(stateHolder);
 
     }
 

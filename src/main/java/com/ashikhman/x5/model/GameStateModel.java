@@ -49,5 +49,9 @@ public class GameStateModel {
         this.tickCount = state.getTickCount();
         this.currentTick = state.getCurrentTick();
         this.commands = List.copyOf(state.getCommands());
+
+        for (var entry : state.getCustomers().entrySet()) {
+            this.customers.put(entry.getKey(), new CustomerModel(entry.getValue()));
+        }
     }
 }

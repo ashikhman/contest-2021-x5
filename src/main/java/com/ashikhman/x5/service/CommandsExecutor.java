@@ -42,11 +42,12 @@ public class CommandsExecutor {
         request.setOffCheckoutLineCommands(new ArrayList<>());
         request.setHireEmployeeCommands(new ArrayList<>());
         request.setFireEmployeeCommands(new ArrayList<>());
+        request.setBuyStockCommands(new ArrayList<>());
 
         state.getCommands()
                 .forEach(command -> command.updateRequest(request));
 
-        if (!state.getCommands().isEmpty()) {
+        if (!state.getCommands().isEmpty() || state.getCurrentTick() % 60 == 0) {
             stateHolder.saveHistory();
         }
 

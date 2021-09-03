@@ -7,7 +7,6 @@ import com.ashikhman.x5.command.SetEmployeeToLineCommand;
 import com.ashikhman.x5.model.CheckoutLineModel;
 import com.ashikhman.x5.model.EmployeeModel;
 import com.ashikhman.x5.model.GameStateModel;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -16,7 +15,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class FillCheckoutLineController implements ControllerInterface {
 
     @Override
