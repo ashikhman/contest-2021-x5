@@ -1,7 +1,9 @@
 package com.ashikhman.x5.model;
 
 import com.ashikhman.x5.client.api.model.CurrentWorldResponse;
+import com.ashikhman.x5.command.CommandInterface;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
 import java.util.ArrayList;
@@ -11,6 +13,7 @@ import java.util.Map;
 
 @Data
 @Accessors(chain = true)
+@NoArgsConstructor
 public class GameStateModel {
 
     private CurrentWorldResponse worldResponse;
@@ -39,27 +42,12 @@ public class GameStateModel {
 
     private Map<Integer, RackCellModel> rackCells = new HashMap<>();
 
-    public void print() {
-        System.out.print("PRODUCTS: ");
-        for (var entry : products.entrySet()) {
-            var product = entry.getValue();
-            System.out.print(product.getStockPrice() + "|");
-        }
-        System.out.print("@ ");
-        System.out.println();
-    }
+    private List<CommandInterface> commands = new ArrayList<>();
 
-    public void printResult() {
-        var template = "Income: %s\n" +
-                "Salary costs: %s\n" +
-                "Stock costs: %s\n" +
-                "Profit: %s\n";
-        System.out.printf(
-                template,
-                income,
-                salaryCosts,
-                stockCosts,
-                income - salaryCosts - stockCosts
-        );
+    public GameStateModel(GameStateModel state) {
+        this.worldResponse = state.getWorldResponse();
+        this.tickCount = state.getTickCount();
+        this.currentTick = state.getCurrentTick();
+        this.commands = List.copyOf(state.getCommands());
     }
 }

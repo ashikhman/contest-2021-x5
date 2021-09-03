@@ -1,9 +1,8 @@
 package com.ashikhman.x5.service;
 
-import com.ashikhman.x5.client.api.ApiException;
 import com.ashikhman.x5.client.api.api.PerfectStoreEndpointApi;
 import com.ashikhman.x5.client.api.model.*;
-import com.ashikhman.x5.exception.UnexpectedException;
+import com.ashikhman.x5.utils.PrintUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,29 +20,32 @@ public class GameLoop {
 
     private final GameStateHolder stateHolder;
 
+    private final CommandsExecutor commandsExecutor;
+
     public void run() {
         log.info("Running game loop");
 
         var state = stateHolder.getState();
+        PrintUtils.printTicks(state);
 
         do {
-            //var tickRequest = createExampleTickRequest(state.getWorldResponse());
+            commandsExecutor.prepare();
 
-            try {
-                state = stateHolder.update(storeApi.tick(new CurrentTickRequest()));
-            } catch (ApiException e) {
-                throw new UnexpectedException("Failed to request a tick", e);
-            }
+            state = commandsExecutor.execute();
 
         } while (!state.isGameOver());
 
-        log.info("Game is over");
+        PrintUtils.printGameOver(state);
+
+        PrintUtils.printCommands(stateHolder);
+
     }
 
     private CurrentTickRequest createExampleTickRequest(CurrentWorldResponse currentWorldResponse) {
         var request = new CurrentTickRequest();
         List<HireEmployeeCommand> hireEmployeeCommands = new ArrayList<>();
         request.setHireEmployeeCommands(hireEmployeeCommands);
+
         // Смотрим на каких кассах нет кассира (либо не был назначен, либо ушел с кассы отдыхать), нанимаем новых кассиров и ставим на эти кассы.
         // Нанимаем самых опытных!
         currentWorldResponse.getCheckoutLines().stream().filter(line -> line.getEmployeeId() == null).forEach(line -> {

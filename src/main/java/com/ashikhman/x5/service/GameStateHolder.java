@@ -5,11 +5,14 @@ import com.ashikhman.x5.client.api.api.PerfectStoreEndpointApi;
 import com.ashikhman.x5.client.api.model.CurrentWorldResponse;
 import com.ashikhman.x5.exception.UnexpectedException;
 import com.ashikhman.x5.model.*;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +24,9 @@ public class GameStateHolder {
     private boolean stateLoaded = false;
 
     private GameStateModel state = new GameStateModel();
+
+    @Getter
+    private List<GameStateModel> history = new ArrayList<>();
 
     public GameStateModel getState() {
         if (!stateLoaded) {
@@ -34,6 +40,10 @@ public class GameStateHolder {
         return state;
     }
 
+    public void saveHistory() {
+        history.add(new GameStateModel(state));
+    }
+
     public GameStateModel update(CurrentWorldResponse worldResponse) {
         state
                 .setWorldResponse(worldResponse)
@@ -42,7 +52,8 @@ public class GameStateHolder {
                 .setIncome(worldResponse.getIncome())
                 .setSalaryCosts(worldResponse.getSalaryCosts())
                 .setStockCosts(worldResponse.getStockCosts())
-                .setGameOver(worldResponse.isGameOver());
+                .setGameOver(worldResponse.isGameOver())
+                .setCommands(new ArrayList<>());
 
         updateProducts(worldResponse);
         updateEmployees(worldResponse);
@@ -51,7 +62,22 @@ public class GameStateHolder {
         updateRecruitmentOffers(worldResponse);
         updateRackCells(worldResponse);
 
+        updateEmployeesTime();
+
         return state;
+    }
+
+    private void updateEmployeesTime() {
+        for (var entry : state.getEmployees().entrySet()) {
+            var employee = entry.getValue();
+            if (null == employee.getCheckoutLine()) {
+                employee.setVacationTicks(employee.getVacationTicks() + 1);
+                employee.setWorkingTicks(1);
+            } else {
+                employee.setWorkingTicks(employee.getWorkingTicks() + 1);
+                employee.setVacationTicks(1);
+            }
+        }
     }
 
     private void updateRackCells(CurrentWorldResponse worldResponse) {
@@ -103,6 +129,8 @@ public class GameStateHolder {
     }
 
     private void updateCheckoutLines(CurrentWorldResponse worldResponse) {
+        state.getEmployees().forEach((integer, employee) -> employee.setCheckoutLine(null));
+
         var presentLines = new HashSet<Integer>();
         worldResponse.getCheckoutLines().forEach(lineResponse -> {
             var lineModel = state.getCheckoutLines().get(lineResponse.getId());
@@ -125,6 +153,8 @@ public class GameStateHolder {
                 employee = state.getEmployees().get(lineResponse.getEmployeeId());
                 if (null == employee) {
                     log.error("No employee found for id: {}", lineResponse.getEmployeeId());
+                } else {
+                    employee.setCheckoutLine(lineModel);
                 }
             }
             lineModel.setEmployee(employee);
