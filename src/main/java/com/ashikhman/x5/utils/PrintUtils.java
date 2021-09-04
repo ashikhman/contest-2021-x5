@@ -120,20 +120,42 @@ public class PrintUtils {
         System.out.println(output);
     }
 
+    public static void printRackCells(GameStateModel state) {
+        var joiner = new StringJoiner("|");
+        for (var entry : state.getRackCells().getMap().entrySet()) {
+            var cell = entry.getValue();
+            var productId = cell.getProduct() != null ? cell.getProduct().getId() : 0;
+            joiner.add(String.format("%s,%s,%s,%s,%s", cell.getId(), cell.getVisibility(), cell.getCapacity(), productId, cell.getProductQuantity()));
+        }
+
+        System.out.printf("CELLS: [%s]%s@\n", state.getCurrentTick(), joiner);
+    }
+
     public static void printTicks(GameStateModel state) {
         System.out.printf("TOTALTICKS: %s\n", state.getTickCount());
     }
 
     public static void printGameOver(GameStateModel state) {
-        var template = "GameOver - Income: %s, " +
-                "Salary costs: %s, " +
-                "Stock costs: %s, " +
-                "Profit: %s @\n";
+        var soldProductsStockCosts = 0.0;
+        for (var entry : state.getProducts().entrySet()) {
+            var product = entry.getValue();
+
+            soldProductsStockCosts += (product.getTotalQuantity() - product.getQuantity()) * product.getStockPrice();
+        }
+
+        var template = "GameOver - Income: %.2f, " +
+                "Salary costs: %.2f, " +
+                "Sold products stock costs: %.2f, " +
+                "Stock costs: %.2f, " +
+                "Products profit: %.2f, " +
+                "Profit: %.2f @\n";
         System.out.printf(
                 template,
                 state.getIncome(),
                 state.getSalaryCosts(),
+                soldProductsStockCosts,
                 state.getStockCosts(),
+                state.getIncome() - soldProductsStockCosts,
                 state.getIncome() - state.getSalaryCosts() - state.getStockCosts()
         );
     }

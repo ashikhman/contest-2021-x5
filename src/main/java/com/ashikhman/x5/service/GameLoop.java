@@ -29,6 +29,10 @@ public class GameLoop {
         PrintUtils.printTicks(state);
 
         do {
+            if (state.getCurrentTick() % 1440 == 0) {
+                PrintUtils.printRackCells(state);
+            }
+
             commandsExecutor.prepare();
 
             state = commandsExecutor.execute();
@@ -40,7 +44,6 @@ public class GameLoop {
 
         PrintUtils.printCommands(stateHolder);
         PrintUtils.printCustomers(stateHolder);
-
     }
 
     private CurrentTickRequest createExampleTickRequest(CurrentWorldResponse currentWorldResponse) {

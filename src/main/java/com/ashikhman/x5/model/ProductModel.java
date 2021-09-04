@@ -15,5 +15,7 @@ public class ProductModel {
 
     private int quantity;
 
+    private int totalQuantity;
+
     private double sellPrice;
 }

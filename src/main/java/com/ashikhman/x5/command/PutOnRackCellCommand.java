@@ -31,6 +31,6 @@ public class PutOnRackCellCommand implements CommandInterface {
 
     @Override
     public String toString() {
-        return String.format("putRack,%s,%s,%s,%s", cell.getId(), product.getId(), quantity, sellPrice);
+        return String.format("on,%s,%s,%s,%s", cell.getId(), product.getId(), quantity, sellPrice);
     }
 }

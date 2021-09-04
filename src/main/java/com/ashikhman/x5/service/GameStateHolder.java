@@ -44,6 +44,14 @@ public class GameStateHolder {
         history.add(new GameStateModel(state));
     }
 
+    public GameStateModel insert(CurrentWorldResponse worldResponse) {
+        insertCheckoutLines(worldResponse);
+        insertRecruitmentOffers(worldResponse);
+        insertRackCells(worldResponse);
+
+        return state;
+    }
+
     public GameStateModel update(CurrentWorldResponse worldResponse) {
         state
                 .setWorldResponse(worldResponse)
@@ -59,13 +67,13 @@ public class GameStateHolder {
         updateEmployees(worldResponse);
         updateCustomer(worldResponse);
         updateCheckoutLines(worldResponse);
-        updateRecruitmentOffers(worldResponse);
         updateRackCells(worldResponse);
 
         updateEmployeesTime();
 
         return state;
     }
+
 
     private void updateEmployeesTime() {
         for (var entry : state.getEmployees().entrySet()) {
@@ -80,8 +88,21 @@ public class GameStateHolder {
         }
     }
 
+    private void insertRackCells(CurrentWorldResponse worldResponse) {
+        worldResponse.getRackCells().forEach(cellResponse -> {
+            var cellModel = new RackCellModel()
+                    .setId(cellResponse.getId())
+                    .setVisibility(cellResponse.getVisibility())
+                    .setCapacity(cellResponse.getCapacity());
+
+            state.getRackCells().getMap().put(cellModel.getId(), cellModel);
+            state.getRackCells().getList().add(cellModel);
+            state.getRackCells().getByVisibility().computeIfAbsent(cellModel.getVisibility(), k -> new ArrayList<>())
+                    .add(cellModel);
+        });
+    }
+
     private void updateRackCells(CurrentWorldResponse worldResponse) {
-        var presentCells = new HashSet<Integer>();
         worldResponse.getRackCells().forEach(cellResponse -> {
             ProductModel product = null;
             if (null != cellResponse.getProductId()) {
@@ -91,11 +112,7 @@ public class GameStateHolder {
                 }
             }
 
-            var cellModel = state.getRackCells().get(cellResponse.getId());
-            if (null == cellModel) {
-                cellModel = new RackCellModel().setId(cellResponse.getId());
-                state.getRackCells().put(cellModel.getId(), cellModel);
-            }
+            var cellModel = state.getRackCells().getMap().get(cellResponse.getId());
 
             var productQuantity = cellResponse.getProductQuantity();
             if (null == productQuantity) {
@@ -103,21 +120,14 @@ public class GameStateHolder {
             }
 
             cellModel
-                    .setVisibility(cellResponse.getVisibility())
-                    .setCapacity(cellResponse.getCapacity())
                     .setProduct(product)
                     .setProductName(cellResponse.getProductName())
-                    .setProductQuantity(productQuantity);
-
-            presentCells.add(cellModel.getId());
+                    .setProductQuantity(productQuantity)
+                    .setProductTime(cellModel.getProductTime() + 1);
         });
-
-        state.getRackCells()
-                .entrySet()
-                .removeIf(entry -> !presentCells.contains(entry.getKey()));
     }
 
-    private void updateRecruitmentOffers(CurrentWorldResponse worldResponse) {
+    private void insertRecruitmentOffers(CurrentWorldResponse worldResponse) {
         state.getRecruitmentOffers().clear();
         worldResponse.getRecruitmentAgency().forEach(offerResponse -> state.getRecruitmentOffers().add(
                 new RecruitmentOfferModel()
@@ -131,13 +141,8 @@ public class GameStateHolder {
     private void updateCheckoutLines(CurrentWorldResponse worldResponse) {
         state.getEmployees().forEach((integer, employee) -> employee.setCheckoutLine(null));
 
-        var presentLines = new HashSet<Integer>();
         worldResponse.getCheckoutLines().forEach(lineResponse -> {
             var lineModel = state.getCheckoutLines().get(lineResponse.getId());
-            if (null == lineModel) {
-                lineModel = new CheckoutLineModel().setId(lineResponse.getId());
-                state.getCheckoutLines().put(lineModel.getId(), lineModel);
-            }
 
             CustomerModel customer = null;
             if (null != lineResponse.getCustomerId()) {
@@ -158,13 +163,14 @@ public class GameStateHolder {
                 }
             }
             lineModel.setEmployee(employee);
-
-            presentLines.add(lineModel.getId());
         });
+    }
 
-        state.getCheckoutLines()
-                .entrySet()
-                .removeIf(entry -> !presentLines.contains(entry.getKey()));
+    private void insertCheckoutLines(CurrentWorldResponse worldResponse) {
+        worldResponse.getCheckoutLines().forEach(lineResponse -> {
+            var lineModel = new CheckoutLineModel().setId(lineResponse.getId());
+            state.getCheckoutLines().put(lineModel.getId(), lineModel);
+        });
     }
 
     private void updateCustomer(CurrentWorldResponse worldResponse) {
@@ -231,6 +237,7 @@ public class GameStateHolder {
             if (null == productModel) {
                 productModel = new ProductModel().setId(productResponse.getId());
                 state.getProducts().put(productModel.getId(), productModel);
+                state.getProductIds().add(productResponse.getId());
             }
 
             productModel
@@ -243,11 +250,20 @@ public class GameStateHolder {
 
         state.getProducts()
                 .entrySet()
-                .removeIf(entry -> !presentProducts.contains(entry.getKey()));
+                .removeIf(entry -> {
+                    if (!presentProducts.contains(entry.getKey())) {
+                        state.getProductIds().remove(entry.getValue().getId());
+                        return true;
+                    }
+
+                    return false;
+                });
     }
 
     private GameStateModel loadState() {
-        update(loadWord());
+        var response = loadWord();
+        insert(response);
+        update(response);
         stateLoaded = true;
 
         return state;

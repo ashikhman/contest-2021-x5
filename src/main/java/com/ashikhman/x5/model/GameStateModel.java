@@ -40,7 +40,9 @@ public class GameStateModel {
 
     private Map<Integer, ProductModel> products = new HashMap<>();
 
-    private Map<Integer, RackCellModel> rackCells = new HashMap<>();
+    private RackCellsModel rackCells = new RackCellsModel();
+
+    private List<Integer> productIds = new ArrayList<>();
 
     private List<CommandInterface> commands = new ArrayList<>();
 

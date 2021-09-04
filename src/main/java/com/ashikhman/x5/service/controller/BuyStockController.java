@@ -22,9 +22,10 @@ public class BuyStockController implements ControllerInterface {
             var product = entry.getValue();
             var command = new BuyStockCommand()
                     .setProduct(product)
-                    .setQuantity(10000);
+                    .setQuantity(100000);
 
             product.setQuantity(product.getQuantity() + command.getQuantity());
+            product.setTotalQuantity(product.getTotalQuantity() + command.getQuantity());
 
             commands.add(command);
         }

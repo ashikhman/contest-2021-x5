@@ -21,4 +21,6 @@ public class RackCellModel {
     private String productName;
 
     private int productQuantity;
+
+    private int productTime;
 }
