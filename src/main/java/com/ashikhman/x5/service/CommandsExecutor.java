@@ -1,42 +1,33 @@
 package com.ashikhman.x5.service;
 
-import com.ashikhman.x5.client.api.ApiException;
-import com.ashikhman.x5.client.api.api.PerfectStoreEndpointApi;
 import com.ashikhman.x5.client.api.model.CurrentTickRequest;
-import com.ashikhman.x5.exception.UnexpectedException;
-import com.ashikhman.x5.model.GameStateModel;
-import com.ashikhman.x5.service.controller.ControllerInterface;
-import lombok.RequiredArgsConstructor;
+import com.ashikhman.x5.command.CommandInterface;
+import com.ashikhman.x5.controller.ControllerInterface;
+import com.ashikhman.x5.repository.StateRepository;
+import lombok.Getter;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class CommandsExecutor {
-
-    private final GameStateHolder stateHolder;
-
-    private final PerfectStoreEndpointApi api;
 
     private final List<ControllerInterface> controllers;
 
-    public void prepare() {
-        controllers.sort(Comparator.comparingInt(ControllerInterface::getOrder));
+    private final StateRepository stateRepository;
 
-        var state = stateHolder.getState();
+    @Getter
+    private final Map<Integer, List<CommandInterface>> history = new HashMap<>();
 
-        controllers.forEach(controller -> {
-            var newCommands = controller.execute(state);
-            state.getCommands().addAll(newCommands);
-        });
+    public CommandsExecutor(List<ControllerInterface> controllers, StateRepository stateRepository) {
+        this.controllers = controllers.stream()
+                .filter(ControllerInterface::isEnabled)
+                .collect(Collectors.toList());
+        this.stateRepository = stateRepository;
     }
 
-    public GameStateModel execute() {
-        var state = stateHolder.getState();
-
+    public CurrentTickRequest execute() {
         var request = new CurrentTickRequest();
         request.setSetOnCheckoutLineCommands(new ArrayList<>());
         request.setOffCheckoutLineCommands(new ArrayList<>());
@@ -45,18 +36,41 @@ public class CommandsExecutor {
         request.setBuyStockCommands(new ArrayList<>());
         request.setPutOnRackCellCommands(new ArrayList<>());
         request.setPutOffRackCellCommands(new ArrayList<>());
+        request.setPriceCommands(new ArrayList<>());
 
-        state.getCommands()
-                .forEach(command -> command.updateRequest(request));
+        var executedCommands = new ArrayList<CommandInterface>();
+        controllers.forEach(controller -> {
+            for (var command : controller.execute()) {
+                command.execute(request);
+                executedCommands.add(command);
+            }
+        });
 
-        if (!state.getCommands().isEmpty() || state.getCurrentTick() % 60 == 0) {
-            stateHolder.saveHistory();
+        if (!executedCommands.isEmpty()) {
+            history.put(stateRepository.get().getCurrentTick(), executedCommands);
         }
 
-        try {
-            return stateHolder.update(api.tick(request));
-        } catch (ApiException e) {
-            throw new UnexpectedException("Error occured while sending tick request", e);
-        }
+        return request;
+    }
+
+    public void printAll() {
+        var output = new StringBuilder();
+        output.append("COMMANDS: ");
+
+        history.entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(entry -> {
+                    output.append(String.format("[%s]", entry.getKey()));
+
+                    var joiner = new StringJoiner(";");
+                    for (var command : entry.getValue()) {
+                        joiner.add(command.toString());
+                    }
+                    output.append(joiner);
+                });
+        output.append("@");
+
+        System.out.println(output);
     }
 }

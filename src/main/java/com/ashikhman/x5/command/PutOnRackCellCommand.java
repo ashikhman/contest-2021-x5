@@ -1,8 +1,8 @@
 package com.ashikhman.x5.command;
 
 import com.ashikhman.x5.client.api.model.CurrentTickRequest;
-import com.ashikhman.x5.model.ProductModel;
-import com.ashikhman.x5.model.RackCellModel;
+import com.ashikhman.x5.entity.ProductEntity;
+import com.ashikhman.x5.entity.RackCellEntity;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -10,16 +10,16 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class PutOnRackCellCommand implements CommandInterface {
 
-    private RackCellModel cell;
+    private RackCellEntity cell;
 
-    private ProductModel product;
+    private ProductEntity product;
 
     private double sellPrice;
 
     private int quantity;
 
     @Override
-    public void updateRequest(CurrentTickRequest request) {
+    public void execute(CurrentTickRequest request) {
         var command = new com.ashikhman.x5.client.api.model.PutOnRackCellCommand();
         command.setRackCellId(cell.getId());
         command.setProductId(product.getId());

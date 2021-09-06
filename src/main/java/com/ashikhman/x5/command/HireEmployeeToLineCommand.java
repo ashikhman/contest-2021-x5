@@ -2,7 +2,7 @@ package com.ashikhman.x5.command;
 
 import com.ashikhman.x5.client.api.model.CurrentTickRequest;
 import com.ashikhman.x5.client.api.model.HireEmployeeCommand;
-import com.ashikhman.x5.model.CheckoutLineModel;
+import com.ashikhman.x5.entity.CheckoutLineEntity;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -10,12 +10,12 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class HireEmployeeToLineCommand implements CommandInterface {
 
-    private CheckoutLineModel line;
+    private CheckoutLineEntity line;
 
     private HireEmployeeCommand.ExperienceEnum experience;
 
     @Override
-    public void updateRequest(CurrentTickRequest request) {
+    public void execute(CurrentTickRequest request) {
         var command = new HireEmployeeCommand();
         command.setExperience(experience);
         command.setCheckoutLineId(line.getId());
@@ -25,6 +25,6 @@ public class HireEmployeeToLineCommand implements CommandInterface {
 
     @Override
     public String toString() {
-        return String.format("hire,%s,%s", line.getId(), experience.toString());
+        return String.format("hire,%s,%s", line.getId(), experience);
     }
 }

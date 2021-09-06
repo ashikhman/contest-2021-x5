@@ -1,0 +1,16 @@
+version: '3.5'
+
+volumes:
+  postgres: ~
+
+services:
+  postgres:
+    image: postgres:10
+    environment:
+      POSTGRES_PASSWORD: x5
+      POSTGRES_USER: x5
+      POSTGRES_DB: x5
+    volumes:
+      - "postgres:/var/lib/postgresql/data"
+    ports:
+      - "5432:5432"

@@ -1,7 +1,7 @@
 package com.ashikhman.x5.command;
 
 import com.ashikhman.x5.client.api.model.CurrentTickRequest;
-import com.ashikhman.x5.model.RackCellModel;
+import com.ashikhman.x5.entity.RackCellEntity;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -9,10 +9,10 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class PutOffRackCellCommand implements CommandInterface {
 
-    private RackCellModel cell;
+    private RackCellEntity cell;
 
     @Override
-    public void updateRequest(CurrentTickRequest request) {
+    public void execute(CurrentTickRequest request) {
         var command = new com.ashikhman.x5.client.api.model.PutOffRackCellCommand();
         command.setRackCellId(cell.getId());
 
